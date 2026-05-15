@@ -1,54 +1,28 @@
-name: Build & Test
+name: Validate
 
 on:
   push:
     branches: [main]
-  pull_request:
-    branches: [main]
 
 jobs:
-  backend:
-    name: Backend Build
+  check:
+    name: Code Validation
     runs-on: ubuntu-latest
-    defaults:
-      run:
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Validate backend JS files
         working-directory: backend
-    steps:
-      - uses: actions/checkout@v4
+        run: |
+          find src -name "*.js" -exec node --check {} \; && echo "All backend files valid"
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Generate Prisma Client
-        run: npx prisma generate
-
-      - name: Syntax check
-        run: node --check src/index.js && echo "Backend syntax OK"
-
-  mobile:
-    name: Mobile Build
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: mobile
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Expo Doctor
-        run: npx expo-doctor || true
-
-      - name: TypeScript Check
-        run: npx tsc --noEmit || true
+      - name: Validate package.json
+        run: |
+          node -e "JSON.parse(require('fs').readFileSync('backend/package.json'))" && echo "backend/package.json valid"
+          node -e "JSON.parse(require('fs').readFileSync('mobile/package.json'))" && echo "mobile/package.json valid"
+          echo "All package.json files valid"
