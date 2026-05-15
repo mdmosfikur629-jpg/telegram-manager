@@ -1,0 +1,12 @@
+{
+  "name": "telegram-manager",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Multi-account Telegram business manager",
+  "workspaces": ["mobile", "backend"],
+  "scripts": {
+    "dev:backend": "cd backend && npm run dev",
+    "dev:mobile": "cd mobile && npx expo start",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:mobile\""
+  }
+}

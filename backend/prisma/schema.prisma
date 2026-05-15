@@ -1,0 +1,85 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  telegramAccounts TelegramAccount[]
+  automationRules  AutomationRule[]
+}
+
+model TelegramAccount {
+  id          String   @id @default(uuid())
+  phoneNumber String
+  sessionData String   // Encrypted MTProto session
+  displayName String?
+  username    String?
+  isActive    Boolean  @default(true)
+  isMaster    Boolean  @default(false)
+  accountGroup String?
+  status      String   @default("active") // active, banned, disconnected
+  lastActiveAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  sentMessages     Message[]
+  receivedMessages Message[] @relation("ReceivedMessages")
+
+  @@index([userId])
+}
+
+model Message {
+  id          String   @id @default(uuid())
+  telegramId  BigInt
+  chatId      BigInt
+  chatTitle   String?
+  chatType    String   // private, group, channel
+  content     String?
+  mediaType   String?  // text, photo, video, document, voice
+  mediaUrl    String?
+  direction   String   // sent, received
+  status      String   @default("sent") // sent, delivered, read
+  createdAt   DateTime @default(now())
+
+  senderAccountId   String?
+  senderAccount     TelegramAccount? @relation("SentMessages", fields: [senderAccountId], references: [id])
+  receiverAccountId String?
+  receiverAccount   TelegramAccount? @relation("ReceivedMessages", fields: [receiverAccountId], references: [id])
+
+  @@unique([telegramId, chatId])
+  @@index([chatId])
+  @@index([senderAccountId])
+  @@index([receiverAccountId])
+}
+
+model AutomationRule {
+  id          String   @id @default(uuid())
+  name        String
+  type        String   // mirror, scheduled, auto_reply
+  isActive    Boolean  @default(true)
+  config      Json     // Rule-specific configuration
+  masterAccountId String?
+  targetAccountIds String[] // Array of account IDs to apply to
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([type])
+}
